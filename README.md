@@ -1,96 +1,124 @@
-# Welcome to Cloud Storage Project
-Application Link URL
-    URL:https://epicbox.vercel.app/
+# EpicBox
 
-# Welcome to cloud Storage Project
+EpicBox is a secure cloud file-storage web application built with React,
+TypeScript, Vite, Tailwind CSS, and Supabase. It provides authenticated file
+management, folders, favorites, sharing, recycle-bin workflows, and protected
+storage operations.
 
-## Project Info
+Production: <https://epicbox.vercel.app/>
 
-## Project Directory
+## Features
 
-```
-├── README.md # Documentation
-├── components.json # Component library configuration
-├── eslint.config.js # ESLint configuration
-├── index.html # Entry file
-├── package.json # Package management
-├── postcss.config.js # PostCSS configuration
-├── public # Static resources directory
-│   ├── favicon.png # Icon
-│   └── images # Image resources
-├── src # Source code directory
-│   ├── App.tsx # Entry file
-│   ├── components # Components directory
-│   ├── context # Context directory
-│   ├── db # Database configuration directory
-│   ├── hooks # Common hooks directory
-│   ├── index.css # Global styles
-│   ├── layout # Layout directory
-│   ├── lib # Utility library directory
-│   ├── main.tsx # Entry file
-│   ├── routes.tsx # Routing configuration
-│   ├── pages # Pages directory
-│   ├── services # Database interaction directory
-│   ├── types # Type definitions directory
-├── tsconfig.app.json # TypeScript frontend configuration file
-├── tsconfig.json # TypeScript configuration file
-├── tsconfig.node.json # TypeScript Node.js configuration file
-└── vite.config.ts # Vite configuration file
-```
+- Email and password authentication
+- User profiles and role-based access
+- Folder and file management
+- Secure Supabase Storage integration
+- Favorites, recent files, and recycle bin
+- Shareable file and folder links
+- Responsive dashboard interface
 
-## Tech Stack
+## Technology
 
-Vite, TypeScript, React, Supabase
+- React 18 and TypeScript
+- Vite
+- React Router
+- Tailwind CSS and Radix UI
+- Supabase Auth, PostgreSQL, Row Level Security, and Storage
+- npm
 
-## Development Guidelines
+## Requirements
 
-### How to edit code locally?
+- Node.js 20 or newer
+- npm 10 or newer
+- A Supabase project
 
-You can choose [VSCode](https://code.visualstudio.com/Download) or any IDE you prefer. The only requirement is to have Node.js and npm installed.
+## Local setup
 
-### Environment Requirements
+1. Clone the repository and install dependencies:
 
-```
-# Node.js ≥ 20
-# npm ≥ 10
-Example:
-# node -v   # v20.18.3
-# npm -v    # 10.8.2
-```
+   ```bash
+   npm install
+   ```
 
-### Installing Node.js on Windows
+2. Create a `.env` file in the project root:
 
-```
-# Step 1: Visit the Node.js official website: https://nodejs.org/, click download. The website will automatically suggest a suitable version (32-bit or 64-bit) for your system.
-# Step 2: Run the installer: Double-click the downloaded installer to run it.
-# Step 3: Complete the installation: Follow the installation wizard to complete the process.
-# Step 4: Verify installation: Open Command Prompt (cmd) or your IDE terminal, and type `node -v` and `npm -v` to check if Node.js and npm are installed correctly.
-```
+   ```env
+   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-public-key
+   VITE_STORAGE_PROVIDER=supabase
+   ```
 
-### Installing Node.js on macOS
+   Only use the Supabase anon/public key in this frontend application. Never
+   expose a service-role key.
 
-```
-# Step 1: Using Homebrew (Recommended method): Open Terminal. Type the command `brew install node` and press Enter. If Homebrew is not installed, you need to install it first by running the following command in Terminal:
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-Alternatively, use the official installer: Visit the Node.js official website. Download the macOS .pkg installer. Open the downloaded .pkg file and follow the prompts to complete the installation.
-# Step 2: Verify installation: Open Command Prompt (cmd) or your IDE terminal, and type `node -v` and `npm -v` to check if Node.js and npm are installed correctly.
+3. Initialize the new Supabase project by running the migration files in
+   order in Supabase SQL Editor:
+
+   - `supabase/migrations/00001_create_initial_schema.sql`
+   - `supabase/migrations/00002_add_terabox_features.sql`
+   - `supabase/migrations/00003_fix_profile_creation.sql`
+
+4. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+5. Open the URL printed by Vite. The application uses hash-based navigation,
+   so the login route is available at `/#/login`.
+
+## Production build
+
+```bash
+npm run build
 ```
 
-### After installation, follow these steps:
+The production output is generated in `dist/`. Vercel uses the configuration
+in `vercel.json` and the `master` branch for production deployment.
 
+## Project structure
+
+```text
+.
+├── public/                 Static assets and images
+├── src/
+│   ├── components/         Shared UI and feature components
+│   ├── contexts/           Authentication and application state
+│   ├── db/                 Supabase client and data-access APIs
+│   ├── hooks/              Reusable React hooks
+│   ├── lib/                Encryption and file utilities
+│   ├── pages/              Route-level screens
+│   ├── types/              Shared TypeScript types
+│   ├── App.tsx             Application shell and routes
+│   └── main.tsx            React entry point
+├── supabase/
+│   ├── migrations/         Database schema and security migrations
+│   └── config.toml         Local Supabase configuration
+├── index.html              Vite HTML entry point
+├── package.json            Scripts and dependencies
+├── vercel.json              Vercel build and SPA routing
+└── vite.config.ts          Vite configuration
 ```
-# Step 1: Download the code package
-# Step 2: Extract the code package
-# Step 3: Open the code package with your IDE and navigate into the code directory
-# Step 4: In the IDE terminal, run the command to install dependencies: npm i
-# Step 5: In the IDE terminal, run the command to start the development server: npm run dev -- --host 127.0.0.1
-# Step 6: if step 5 failed, try this command to start the development server: npx vite --host 127.0.0.1
-```
 
-### How to develop backend services?
+## Authentication notes
 
-Configure environment variables and install relevant dependencies.If you need to use a database, please use the official version of Supabase.
+New users must register with an email address and password in the active
+Supabase project. Profile rows are created by the database trigger in
+`00003_fix_profile_creation.sql`; the browser does not insert profile rows
+directly.
 
-## Learn More
+If authentication returns an invalid-credentials error after changing
+Supabase projects, register the user again in the new project. Users and
+uploaded files are not automatically transferred between Supabase projects.
 
-You can also check the help documentation: Download and Building the app（ [https://intl.cloud.baidu.com/en/doc/MIAODA/s/download-and-building-the-app-en](https://intl.cloud.baidu.com/en/doc/MIAODA/s/download-and-building-the-app-en)）to learn more detailed content.
+## Deployment
+
+The production repository is `Deepparmar07/app2`, deployed by the Vercel
+project `app2`. Configure `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY` as Vercel Production environment variables, then
+redeploy after changing either value because Vite embeds `VITE_*` variables
+during the build.
+
+## License
+
+No license has been specified for this project.

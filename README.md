@@ -43,7 +43,7 @@ and protected storage operations.
 
    ```env
    VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-supabase-publishable-key
+   VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
    VITE_STORAGE_PROVIDER=supabase
    VITE_ENCRYPTION_KEY=your-existing-encryption-key
    ```
@@ -77,7 +77,8 @@ and protected storage operations.
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `VITE_SUPABASE_URL` | Yes | URL of the active Supabase project |
-| `VITE_SUPABASE_ANON_KEY` | Yes | Supabase publishable/anon key |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes | Supabase publishable key |
+| `VITE_SUPABASE_ANON_KEY` | Legacy | Older anon-key name still supported |
 | `VITE_STORAGE_PROVIDER` | Yes | Use `supabase` for the supported setup |
 | `VITE_ENCRYPTION_KEY` | For compatibility | AES key used for encrypted files |
 
@@ -118,7 +119,7 @@ Development:
 
 ```text
 VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
+VITE_SUPABASE_PUBLISHABLE_KEY
 VITE_STORAGE_PROVIDER
 VITE_ENCRYPTION_KEY
 ```

@@ -1,8 +1,9 @@
 # EpicBox
 
-EpicBox is a web-based file manager for uploading, organizing, previewing, and
-sharing files. It uses Supabase for authentication and file metadata, and
-supports private Supabase Storage or AWS S3 for file objects.
+EpicBox is a web-based cloud file manager for uploading, organizing,
+previewing, and sharing files. It uses Supabase for authentication and file
+metadata, with support for private Supabase Storage or AWS S3 object storage.
+The React application is deployed on Vercel.
 
 - **Production:** [epicbox.vercel.app](https://epicbox.vercel.app/)
 - **Source:** [Deepparmar07/Epicbox](https://github.com/Deepparmar07/Epicbox)
@@ -11,13 +12,16 @@ supports private Supabase Storage or AWS S3 for file objects.
 
 - Email and password authentication, registration, and password recovery
 - File upload, download, search, preview, and folder organization
+- File type categories and grid/list views
 - Favorites, recent files, and recycle-bin workflows
 - Share links with optional passwords, expiration, and download permissions
 - Share QR codes and access statistics
+- Storage usage and account settings
+- User and administrator roles
 - Responsive interface with light and dark themes
 - Supabase Auth, PostgreSQL, and row-level security
 - Supabase Storage or private AWS S3 object storage
-- Browser-side AES-GCM encryption before file upload
+- Browser-side AES-256-GCM encryption before upload
 
 ## Technology
 
@@ -26,6 +30,23 @@ supports private Supabase Storage or AWS S3 for file objects.
 - Supabase Auth, PostgreSQL, Storage, and Edge Functions
 - AWS S3 with short-lived presigned URLs
 - Vercel
+
+## How storage works
+
+The browser encrypts a file before uploading it. Supabase stores account data,
+file metadata, folder relationships, and sharing records. Each file record
+tracks its storage provider so the app can continue routing older files to
+Supabase Storage while newer files use S3.
+
+For S3, the browser first asks the `s3-storage` Supabase Edge Function for a
+short-lived presigned URL. The function validates the signed-in user and
+checks ownership or share-link permissions before issuing an upload,
+download, or delete URL. The browser then transfers the encrypted object
+directly to the private S3 bucket. Presigned URLs expire after five minutes.
+
+This is browser-side encryption, not an end-to-end encryption guarantee:
+`VITE_ENCRYPTION_KEY` is included in the frontend build. Do not claim that this
+key is hidden from users or that it provides private per-user key management.
 
 ## Getting started
 
@@ -53,7 +74,21 @@ supports private Supabase Storage or AWS S3 for file objects.
    ```
 
 3. Apply the SQL migrations in `supabase/migrations/` to the intended Supabase
-   project, in filename order.
+   project, in filename order. The current migration sequence is:
+
+   | Migration | Purpose |
+   | --- | --- |
+   | `00001_create_initial_schema.sql` | Core tables, policies, functions, and storage setup |
+   | `00002_add_terabox_features.sql` | File-management features and related schema |
+   | `00003_fix_profile_creation.sql` | Profile creation trigger repair |
+   | `00004_repair_profile_trigger.sql` | Follow-up repair for profile creation |
+   | `00005_backfill_missing_profiles.sql` | Restore profiles for existing auth users |
+   | `00006_handle_duplicate_signup_usernames.sql` | Handle duplicate usernames during signup |
+   | `00007_grant_authenticated_app_table_access.sql` | Grant required table privileges |
+   | `00008_allow_encrypted_file_uploads.sql` | Allow encrypted object uploads to Supabase Storage |
+   | `00009_track_file_storage_provider.sql` | Track whether each file is in Supabase or S3 |
+
+   Run each migration once, in order, against the correct Supabase project.
 4. Start the local development server:
 
    ```sh
@@ -61,6 +96,11 @@ supports private Supabase Storage or AWS S3 for file objects.
    ```
 
 The app uses hash-based routes. The login page is available at `/#/login`.
+
+New accounts use Supabase Auth; a database trigger creates the associated
+profile. Do not add client-side profile creation to signup. When moving to a
+different Supabase project, authentication accounts, metadata, and stored
+objects are not automatically transferred.
 
 ## Storage configuration
 
@@ -93,7 +133,7 @@ credentials belong only in Supabase Edge Function secrets—not in frontend
    ```
 
 3. Create a dedicated IAM identity with only the object permissions EpicBox
-   needs, scoped to the bucket:
+   needs, scoped to the bucket. Do not attach `AmazonS3FullAccess`:
 
    ```json
    {
@@ -112,7 +152,10 @@ credentials belong only in Supabase Edge Function secrets—not in frontend
    }
    ```
 
-4. In Supabase **Edge Functions → Secrets**, set:
+4. Configure the bucket's CORS policy for the production web origin and any
+   local development origin you use. CORS permits browser requests; it does
+   not make the bucket public.
+5. In Supabase **Edge Functions → Secrets**, set:
    - `S3_BUCKET`
    - `AWS_REGION`
    - `AWS_ACCESS_KEY_ID`
@@ -120,19 +163,24 @@ credentials belong only in Supabase Edge Function secrets—not in frontend
 
    Supabase supplies its project URL and service credentials to the Edge
    Function at runtime.
-5. Deploy the Edge Function to the same Supabase project used by the app:
+6. Deploy the Edge Function to the same Supabase project used by the app:
 
    ```sh
    npx supabase login
    npx supabase functions deploy s3-storage --project-ref YOUR_PROJECT_REF
    ```
 
-6. Apply migration `00009_track_file_storage_provider.sql` if it has not
+7. Apply migration `00009_track_file_storage_provider.sql` if it has not
    already been applied.
-7. After verifying the function, secrets, bucket CORS, and IAM policy, set
-   `VITE_STORAGE_PROVIDER=s3` in the Vercel environment and redeploy.
-8. Test a new upload, download, preview, share link, and deletion. Existing
+8. After verifying the function, secrets, bucket CORS, and IAM policy, set
+   `VITE_STORAGE_PROVIDER=s3` in Vercel and redeploy the frontend.
+9. Test a new upload, download, preview, share link, and deletion. Existing
    Supabase objects are not automatically copied to S3.
+
+If S3 returns an error, inspect the failed request's response body for its
+error code. `AccessDenied` usually indicates IAM or bucket-policy permissions;
+`SignatureDoesNotMatch` can indicate an incorrect key pair or region. Never
+share a presigned URL: it is a temporary credential.
 
 Enable S3 versioning to help recover overwritten or deleted objects. For an
 independent backup, configure replication or scheduled copies to a separate
@@ -155,19 +203,25 @@ existing data and do not treat it as a secure key-management system.
 
 ## Database and deployment
 
-Apply all migrations in `supabase/migrations/` in order. They define the
-application schema, access policies, profile recovery, encrypted uploads, and
-per-file storage-provider tracking. Use the SQL Editor in the correct Supabase
-project and verify each migration before continuing.
+Apply all migrations in `supabase/migrations/` in order as listed above. They
+define the application schema, access policies, profile recovery, encrypted
+uploads, and per-file storage-provider tracking. Use the SQL Editor in the
+correct Supabase project and verify each migration before continuing.
 
-For Vercel, use:
+Connect Vercel to [Deepparmar07/Epicbox](https://github.com/Deepparmar07/Epicbox)
+and use `master` as the production branch. Configure:
 
 - Build command: `npm run build`
 - Output directory: `dist`
 - Production branch: `master`
 
-Set the required `VITE_*` variables in the appropriate Vercel environments and
-redeploy after changing them. Do not put AWS credentials in Vercel.
+Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
+`VITE_STORAGE_PROVIDER`, and `VITE_ENCRYPTION_KEY` in the appropriate Vercel
+environments. Redeploy after changing a `VITE_*` value. Do not put AWS
+credentials in Vercel.
+
+The application uses hash-based client routes. `vercel.json` includes the
+rewrite configuration required for clean entry URLs such as `/login`.
 
 The `supabase/reset-data.sql` script is destructive: it removes application
 data and storage objects. Review it carefully and run it only when you
@@ -178,6 +232,30 @@ intentionally want to reset the correct project.
 ```sh
 npm run lint
 npm run build
+```
+
+`npm run lint` runs the project TypeScript check followed by Biome.
+`npm run build` creates the production bundle in `dist/`.
+
+## Project structure
+
+```text
+src/
+  components/       Shared UI, file, and layout components
+  contexts/         Authentication and application state
+  db/               Supabase client and data-access APIs
+  hooks/            Reusable React hooks
+  lib/              Encryption, file utilities, and storage providers
+  pages/            Route-level screens
+  types/            Shared TypeScript types
+  routes.tsx        Application route definitions
+supabase/
+  functions/        Supabase Edge Functions
+  migrations/       Ordered database and security migrations
+  reset-data.sql    Optional destructive data reset script
+docs/
+  prd.md            Product requirements and design reference
+vercel.json         Vercel SPA rewrite configuration
 ```
 
 ## Security notes

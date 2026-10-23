@@ -57,11 +57,12 @@ and protected storage operations.
    - `supabase/migrations/00002_add_terabox_features.sql`
    - `supabase/migrations/00003_fix_profile_creation.sql`
    - `supabase/migrations/00004_repair_profile_trigger.sql`
+   - `supabase/migrations/00005_backfill_missing_profiles.sql`
 
    These migrations create the database tables, Row Level Security policies,
-   profile trigger, functions, indexes, and private storage bucket. The final
-   migration repairs profile creation for projects where an earlier migration
-   was incomplete or the trigger was replaced.
+   profile trigger, functions, indexes, and private storage bucket. The trigger
+   migrations repair server-side profile creation; the final migration also
+   restores profiles for accounts created before profile creation was repaired.
 
 4. Start the development server:
 
@@ -91,24 +92,27 @@ changing encryption behavior.
 
 ## Supabase setup
 
-The active project must contain all four migrations listed above. New users are
+The active project must contain all five migrations listed above. New users are
 created in the active Supabase project and their profile is created by a
 database trigger; the browser must not insert profile rows during signup.
-Users, file metadata, and Storage objects are not
-automatically transferred when changing Supabase projects.
+Users and file metadata are not automatically transferred when changing
+Supabase projects.
 
 For a new project:
 
-1. Run all three migrations in Supabase SQL Editor.
-2. Confirm the private storage bucket exists.
+1. Run all five migrations in Supabase SQL Editor, in order.
+2. Confirm the migrations complete successfully. The Supabase storage bucket
+   is only used when `VITE_STORAGE_PROVIDER=supabase`.
 3. Configure Authentication settings and redirect URLs for local and Vercel
    origins.
-4. Register the account again in the new project.
+4. Try signing in with the email used at registration. If the auth account
+   exists but its profile was missing, migration `00005` restores that profile.
+   Accounts are not transferred when switching Supabase projects.
 
 ## Vercel deployment
 
-Connect Vercel to the `DEEPPARMAR7/EPICBOX` repository and set the production
-branch to the branch you intend to deploy. The project configuration is:
+Connect Vercel to the `Deepparmar07/Epicbox` repository and use `master` as
+the production branch. The project configuration is:
 
 - Build command: `npm run build`
 - Output directory: `dist`

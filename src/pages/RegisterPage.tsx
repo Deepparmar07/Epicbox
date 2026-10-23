@@ -24,8 +24,9 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (!email.trim() || !username.trim() || !password || !confirmPassword) {
+    if (!normalizedEmail || !username.trim() || !password || !confirmPassword) {
       toast({
         title: 'Validation Error',
         description: 'Please fill in all fields',
@@ -35,7 +36,7 @@ export default function RegisterPage() {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(normalizedEmail)) {
       toast({
         title: 'Invalid Email',
         description: 'Please enter a valid email address',
@@ -92,7 +93,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await signUp(email.toLowerCase(), username, password);
+      await signUp(normalizedEmail, username, password);
       toast({
         title: 'Account Created!',
         description: 'Welcome to EpicBox. You can now sign in.',

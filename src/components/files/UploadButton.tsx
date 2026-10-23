@@ -37,12 +37,13 @@ export default function UploadButton({ currentFolderId, onUploadComplete }: Uplo
 
     setUploading(true);
     let successCount = 0;
-    let errorCount = 0;
+    const uploadErrors: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       let file = files[i];
       setCurrentFile(file.name);
       setProgress(((i + 1) / files.length) * 100);
+      let storagePath: string | null = null;
 
       try {
         const maxSize = 52428800;
@@ -63,7 +64,7 @@ export default function UploadButton({ currentFolderId, onUploadComplete }: Uplo
         }
 
         const sanitizedName = sanitizeFileName(file.name);
-        const storagePath = await storageApi.uploadFile(file, profile.id);
+        storagePath = await storageApi.uploadFile(file, profile.id);
 
         await fileApi.createFile({
           name: sanitizedName,
@@ -77,7 +78,16 @@ export default function UploadButton({ currentFolderId, onUploadComplete }: Uplo
         successCount++;
       } catch (error) {
         console.error('Upload error:', error);
-        errorCount++;
+        if (storagePath) {
+          try {
+            await storageApi.deleteFile(storagePath);
+          } catch (cleanupError) {
+            console.error('Failed to clean up uploaded file after metadata save failed:', cleanupError);
+          }
+        }
+
+        const message = error instanceof Error ? error.message : 'Unknown upload error';
+        uploadErrors.push(`${file.name}: ${message}`);
       }
     }
 
@@ -93,10 +103,10 @@ export default function UploadButton({ currentFolderId, onUploadComplete }: Uplo
       onUploadComplete();
     }
 
-    if (errorCount > 0) {
+    if (uploadErrors.length > 0) {
       toast({
         title: 'Upload Errors',
-        description: `Failed to upload ${errorCount} file(s)`,
+        description: uploadErrors.join('\n'),
         variant: 'destructive',
       });
     }

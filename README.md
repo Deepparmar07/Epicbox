@@ -60,13 +60,15 @@ and protected storage operations.
    - `supabase/migrations/00005_backfill_missing_profiles.sql`
    - `supabase/migrations/00006_handle_duplicate_signup_usernames.sql`
    - `supabase/migrations/00007_grant_authenticated_app_table_access.sql`
+   - `supabase/migrations/00008_allow_encrypted_file_uploads.sql`
 
    These migrations create the database tables, Row Level Security policies,
    profile trigger, functions, indexes, and private storage bucket. The trigger
    migrations repair server-side profile creation and safely handle duplicate
    usernames; migration `00005` restores profiles for accounts created before
-   profile creation was repaired, and migration `00007` grants table privileges
-   required in addition to the row-level security policies.
+   profile creation was repaired, `00007` grants table privileges required in
+   addition to row-level security policies, and `00008` permits encrypted file
+   blobs in the private storage bucket.
 
 4. Start the development server:
 
@@ -96,7 +98,7 @@ changing encryption behavior.
 
 ## Supabase setup
 
-The active project must contain all seven migrations listed above. New users are
+The active project must contain all eight migrations listed above. New users are
 created in the active Supabase project and their profile is created by a
 database trigger; the browser must not insert profile rows during signup.
 Users and file metadata are not automatically transferred when changing
@@ -104,7 +106,7 @@ Supabase projects.
 
 For a new project:
 
-1. Run all seven migrations in Supabase SQL Editor, in order.
+1. Run all eight migrations in Supabase SQL Editor, in order.
 2. Confirm the migrations complete successfully. The Supabase storage bucket
    is only used when `VITE_STORAGE_PROVIDER=supabase`.
 3. Configure Authentication settings and redirect URLs for local and Vercel

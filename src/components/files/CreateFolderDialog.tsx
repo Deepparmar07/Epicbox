@@ -43,7 +43,14 @@ export default function CreateFolderDialog({
       return;
     }
 
-    if (!profile) return;
+    if (!profile) {
+      toast({
+        title: 'Profile unavailable',
+        description: 'Your profile has not loaded. Refresh the page and try again. If the problem continues, check profile permissions in Supabase.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setLoading(true);
     try {

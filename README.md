@@ -66,20 +66,30 @@ private AWS S3 bucket. Existing Supabase Storage files remain supported.
 ## Architecture
 
 ```mermaid
-flowchart LR
-    Browser["EpicBox web app<br/>React + TypeScript"]
-    Auth["Supabase Auth"]
-    DB["Supabase PostgreSQL<br/>profiles, metadata, shares"]
-    Edge["Supabase Edge Function<br/>auth checks + signed URLs"]
-    S3["Primary: private AWS S3<br/>encrypted file objects"]
-    SupaStorage["Supabase Storage<br/>existing file support"]
+flowchart TB
+    Developer["Developer"] -->|"push to master"| GitHub["GitHub repository"]
+    GitHub -->|"deploy on push"| Vercel["Vercel build + hosting"]
 
-    Browser -->|"sign in / query"| Auth
-    Browser -->|"read and write metadata"| DB
-    Browser -->|"request authorized URL"| Edge
-    Edge -->|"issue short-lived URL"| Browser
-    Browser -->|"direct object transfer"| S3
-    Browser -->|"provider-selected transfer"| SupaStorage
+    Visitor["User's browser"] -->|"HTTPS: load app"| Vercel
+    Vercel -->|"serves built React + TypeScript app"| Visitor
+
+    subgraph Supabase["Supabase project"]
+        Auth["Supabase Auth<br/>sign-in and session"]
+        DB[("PostgreSQL<br/>profiles, file metadata,<br/>folders, shares, roles")]
+        Edge["s3-storage Edge Function<br/>validates access + signs requests"]
+        Legacy["Supabase Storage<br/>existing/legacy objects"]
+    end
+
+    S3[("AWS S3 bucket<br/>private encrypted objects")]
+
+    Visitor -->|"authenticate"| Auth
+    Visitor -->|"read/write app data<br/>subject to database policies"| DB
+    Visitor -->|"request upload/download/delete URL"| Edge
+    Edge -->|"verify user, ownership,<br/>or share permissions"| Auth
+    Edge -->|"check file/share metadata"| DB
+    Edge -->|"return short-lived presigned URL"| Visitor
+    Visitor -->|"direct encrypted object transfer<br/>using presigned URL"| S3
+    Visitor -->|"provider-routed access<br/>for existing files"| Legacy
 ```
 
 Each file record tracks its storage provider so the application routes files
@@ -218,7 +228,16 @@ Edge Function secrets—not in frontend `VITE_*` variables, source code, or chat
    - `AWS_SECRET_ACCESS_KEY`
 
    Supabase supplies its project URL and service credentials to the Edge
-   Function at runtime.
+   Function at runtime. For local development, copy
+   `supabase/functions/.env.example` to `supabase/functions/.env`, fill in the
+   bucket and restricted IAM credentials, then run:
+
+   ```sh
+   npx supabase functions serve s3-storage --env-file supabase/functions/.env
+   ```
+
+   The local `.env` file is ignored by Git. Do not commit AWS credentials or
+   put them in the frontend `.env` file.
 5. Deploy the Edge Function to the same Supabase project used by the app:
 
    ```sh
@@ -252,11 +271,18 @@ bucket or account, and periodically test restoring an object.
 | `VITE_SUPABASE_ANON_KEY` | Legacy | Legacy publishable/anon key name supported by existing deployments |
 | `VITE_STORAGE_PROVIDER` | Yes for S3 | `s3` for primary object storage; `supabase` for Supabase Storage environments |
 | `VITE_ENCRYPTION_KEY` | For existing encrypted data | Browser-side AES-GCM encryption key |
+| `S3_BUCKET` | Yes for S3 | Private S3 bucket name; configure as an Edge Function secret |
+| `AWS_REGION` | Yes for S3 | AWS region containing the bucket; configure as an Edge Function secret |
+| `AWS_ACCESS_KEY_ID` | Yes for S3 | Restricted IAM access key; server-side only |
+| `AWS_SECRET_ACCESS_KEY` | Yes for S3 | Restricted IAM secret key; server-side only |
 
 Vite embeds `VITE_*` values in the client bundle. In particular,
 `VITE_ENCRYPTION_KEY` is **not a server-only secret**. Changing it can prevent
 previously encrypted files from being decrypted. Keep the same value for
-existing data and do not treat it as a secure key-management system.
+existing data and do not treat it as a secure key-management system. S3
+settings are intentionally kept out of the frontend `.env.example`: use
+`supabase/functions/.env.example` for local Edge Function development and set
+the production values in Supabase **Edge Functions → Secrets**.
 
 ## Database and deployment
 

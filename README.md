@@ -1,27 +1,58 @@
-# EpicBox
+<div align="center">
+  <img src="public/images/logo/logo-icon.svg" alt="EpicBox logo" width="72" height="72">
+  <h1>EpicBox</h1>
+  <p><strong>Your files, organized and within reach.</strong></p>
+  <p>A cloud file manager for organizing, previewing, and sharing files.</p>
+  <p>
+    <a href="https://epicbox.vercel.app/"><strong>Open the app</strong></a>
+    &nbsp;·&nbsp;
+    <a href="#getting-started">Run locally</a>
+    &nbsp;·&nbsp;
+    <a href="#storage-configuration">Storage setup</a>
+  </p>
+  <p>
+    <img alt="React 18" src="https://img.shields.io/badge/React-18-149eca?logo=react&logoColor=white">
+    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white">
+    <img alt="Vite" src="https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white">
+    <img alt="Supabase" src="https://img.shields.io/badge/Supabase-Auth%20%26%20Postgres-3fcf8e?logo=supabase&logoColor=white">
+    <img alt="AWS S3" src="https://img.shields.io/badge/AWS-S3-ff9900?logo=amazons3&logoColor=white">
+  </p>
+</div>
 
-EpicBox is a web-based cloud file manager for uploading, organizing,
-previewing, and sharing files. It uses Supabase for authentication and file
-metadata, with support for private Supabase Storage or AWS S3 object storage.
-The React application is deployed on Vercel.
+---
 
-- **Production:** [epicbox.vercel.app](https://epicbox.vercel.app/)
-- **Source:** [Deepparmar07/Epicbox](https://github.com/Deepparmar07/Epicbox)
+## Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Technology](#technology)
+- [Architecture](#architecture)
+- [How storage works](#how-storage-works)
+- [Getting started](#getting-started)
+- [Storage configuration](#storage-configuration)
+- [Environment variables](#environment-variables)
+- [Database and deployment](#database-and-deployment)
+- [Development checks](#development-checks)
+- [Project structure](#project-structure)
+- [Security notes](#security-notes)
+
+## Overview
+
+EpicBox is a web-based cloud file manager built with React and Supabase, with
+support for private Supabase Storage or AWS S3 object storage. The app is
+deployed on [Vercel](https://epicbox.vercel.app/); source code is hosted in
+[Deepparmar07/Epicbox](https://github.com/Deepparmar07/Epicbox).
 
 ## Features
 
-- Email and password authentication, registration, and password recovery
-- File upload, download, search, preview, and folder organization
-- File type categories and grid/list views
-- Favorites, recent files, and recycle-bin workflows
-- Share links with optional passwords, expiration, and download permissions
-- Share QR codes and access statistics
-- Storage usage and account settings
-- User and administrator roles
-- Responsive interface with light and dark themes
-- Supabase Auth, PostgreSQL, and row-level security
-- Supabase Storage or private AWS S3 object storage
-- Browser-side AES-256-GCM encryption before upload
+| Organize | Share | Manage |
+| --- | --- | --- |
+| Upload, search, preview, and sort files | Create expiring or password-protected links | Sign in and recover accounts with Supabase Auth |
+| Create folders and browse file categories | Choose whether recipients can download | Apply user/admin roles and database access policies |
+| Keep favorites and revisit recent files | Share a QR code and view access statistics | Use a recycle bin, settings, and theme controls |
+
+Files are encrypted in the browser with AES-GCM before upload. Object storage
+can be Supabase Storage or a private AWS S3 bucket.
 
 ## Technology
 
@@ -30,6 +61,28 @@ The React application is deployed on Vercel.
 - Supabase Auth, PostgreSQL, Storage, and Edge Functions
 - AWS S3 with short-lived presigned URLs
 - Vercel
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser["EpicBox web app<br/>React + TypeScript"]
+    Auth["Supabase Auth"]
+    DB["Supabase PostgreSQL<br/>profiles, metadata, shares"]
+    Edge["Supabase Edge Function<br/>auth checks + signed URLs"]
+    S3["Private AWS S3 bucket<br/>encrypted file objects"]
+    SupaStorage["Supabase Storage<br/>legacy or selected provider"]
+
+    Browser -->|"sign in / query"| Auth
+    Browser -->|"read and write metadata"| DB
+    Browser -->|"request authorized URL"| Edge
+    Edge -->|"issue short-lived URL"| Browser
+    Browser -->|"direct object transfer"| S3
+    Browser -->|"provider-selected transfer"| SupaStorage
+```
+
+The S3 path is optional. Existing file records include their storage provider
+so the application can route files to the provider where they were uploaded.
 
 ## How storage works
 
@@ -118,7 +171,7 @@ credentials belong only in Supabase Edge Function secrets—not in frontend
 `VITE_*` variables, source code, or chat.
 
 1. Create a private S3 bucket. Keep **Block all public access** enabled.
-2. Configure bucket CORS for the application origins. For production:
+2. Configure bucket CORS for the application origins. For production, use:
 
    ```json
    [
@@ -152,10 +205,9 @@ credentials belong only in Supabase Edge Function secrets—not in frontend
    }
    ```
 
-4. Configure the bucket's CORS policy for the production web origin and any
-   local development origin you use. CORS permits browser requests; it does
-   not make the bucket public.
-5. In Supabase **Edge Functions → Secrets**, set:
+   Add a local origin only when needed for development. CORS permits browser
+   requests; it does not make the bucket public.
+4. In Supabase **Edge Functions → Secrets**, set:
    - `S3_BUCKET`
    - `AWS_REGION`
    - `AWS_ACCESS_KEY_ID`
@@ -163,18 +215,18 @@ credentials belong only in Supabase Edge Function secrets—not in frontend
 
    Supabase supplies its project URL and service credentials to the Edge
    Function at runtime.
-6. Deploy the Edge Function to the same Supabase project used by the app:
+5. Deploy the Edge Function to the same Supabase project used by the app:
 
    ```sh
    npx supabase login
    npx supabase functions deploy s3-storage --project-ref YOUR_PROJECT_REF
    ```
 
-7. Apply migration `00009_track_file_storage_provider.sql` if it has not
+6. Apply migration `00009_track_file_storage_provider.sql` if it has not
    already been applied.
-8. After verifying the function, secrets, bucket CORS, and IAM policy, set
+7. After verifying the function, secrets, bucket CORS, and IAM policy, set
    `VITE_STORAGE_PROVIDER=s3` in Vercel and redeploy the frontend.
-9. Test a new upload, download, preview, share link, and deletion. Existing
+8. Test a new upload, download, preview, share link, and deletion. Existing
    Supabase objects are not automatically copied to S3.
 
 If S3 returns an error, inspect the failed request's response body for its

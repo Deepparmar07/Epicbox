@@ -7,7 +7,19 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, User, Eye, EyeOff, HardDrive, Shield, Cloud, ArrowRight } from 'lucide-react';
+import {
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  Shield,
+  Cloud,
+  ArrowRight,
+  FolderOpen,
+  Share2,
+  Star,
+} from 'lucide-react';
+import PageMeta from '@/components/common/PageMeta';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -87,103 +99,80 @@ export default function LoginPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Branding */}
-      <div className="hidden xl:flex xl:w-1/2 bg-gradient-to-br from-primary via-primary/95 to-secondary relative overflow-hidden">
-        {/* Background decorations */}
-        <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[0.9fr_1.1fr]">
+      <PageMeta title="Sign in | EpicBox" description="Sign in to your EpicBox account to manage your files." />
+
+      <aside className="relative hidden min-h-screen overflow-hidden bg-[#101b35] px-12 py-7 text-white lg:flex lg:flex-col lg:justify-between xl:px-16">
+        <div aria-hidden="true" className="absolute inset-0 overflow-hidden">
+          <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
+          <div className="absolute -bottom-32 -right-20 h-[28rem] w-[28rem] rounded-full bg-indigo-400/20 blur-3xl" />
+          <div className="absolute inset-0 opacity-[0.08] [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px]" />
         </div>
 
-        {/* Floating icons */}
-        <div className="absolute inset-0 pointer-events-none">
-          <Shield className="absolute top-20 left-20 w-12 h-12 text-white/10 animate-float" />
-          <Lock className="absolute top-40 right-32 w-10 h-10 text-white/10 animate-float" style={{ animationDelay: '1s' }} />
-          <Cloud className="absolute bottom-32 left-40 w-14 h-14 text-white/10 animate-float" style={{ animationDelay: '2s' }} />
+        <div className="relative z-10 flex items-center gap-3">
+          <img src="/images/logo/logo-icon.svg" alt="" className="h-11 w-11 rounded-xl" />
+          <span className="text-2xl font-bold tracking-tight">EpicBox</span>
         </div>
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center px-16 text-white">
-          <div className="space-y-8">
-            {/* Logo */}
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                <HardDrive className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold">EpicBox</h1>
-                <p className="text-white/80 text-sm">Enterprise File Storage</p>
-              </div>
+        <div className="relative z-10 mx-auto w-full max-w-xl py-8">
+          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-sm text-blue-100">
+            <Shield className="h-4 w-4" />
+            Your personal file workspace
+          </p>
+          <h1 className="max-w-lg text-4xl font-semibold leading-tight tracking-tight xl:text-5xl">
+            Your files, organized and within reach.
+          </h1>
+          <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">
+            Keep important files together, find them quickly, and share them on your terms.
+          </p>
+
+          <div className="mt-10 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+              <FolderOpen className="mb-5 h-5 w-5 text-blue-200" />
+              <p className="font-medium">Stay organized</p>
+              <p className="mt-1 text-sm text-slate-300">Folders and quick access</p>
             </div>
-
-            {/* Features */}
-            <div className="space-y-6 mt-12">
-              <h2 className="text-3xl font-bold">Secure Cloud Storage for Your Business</h2>
-              <p className="text-white/90 text-lg">
-                Store, manage, and share your files with enterprise-grade security and reliability.
-              </p>
-
-              <div className="space-y-4 mt-8">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">End-to-End Encryption</h3>
-                    <p className="text-white/80 text-sm">Your files are encrypted during storage and transmission</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-                    <Cloud className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">Cloud Accessibility</h3>
-                    <p className="text-white/80 text-sm">Access your files from anywhere, anytime</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-                    <Lock className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">Advanced Security</h3>
-                    <p className="text-white/80 text-sm">Multi-layer security with role-based access control</p>
-                  </div>
-                </div>
-              </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+              <Share2 className="mb-5 h-5 w-5 text-blue-200" />
+              <p className="font-medium">Share with control</p>
+              <p className="mt-1 text-sm text-slate-300">Links and access options</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+              <Star className="mb-5 h-5 w-5 text-blue-200" />
+              <p className="font-medium">Find it faster</p>
+              <p className="mt-1 text-sm text-slate-300">Favorites and recent files</p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="xl:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-              <HardDrive className="w-6 h-6 text-primary-foreground" />
-            </div>
+        <p className="relative z-10 text-sm text-slate-400">A clearer home for your digital files.</p>
+      </aside>
+
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10 sm:px-8">
+        <div aria-hidden="true" className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-blue-100/70 blur-3xl dark:bg-blue-900/20" />
+        <div aria-hidden="true" className="absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-indigo-100/60 blur-3xl dark:bg-indigo-900/20" />
+
+        <div className="relative z-10 w-full max-w-[430px]">
+          <div className="mb-8 flex items-center justify-center gap-3 lg:hidden">
+            <img src="/images/logo/logo-icon.svg" alt="" className="h-11 w-11 rounded-xl shadow-sm" />
             <div>
-              <h1 className="text-2xl font-bold text-foreground">EpicBox</h1>
-              <p className="text-muted-foreground text-xs">Enterprise File Storage</p>
+              <p className="text-2xl font-bold tracking-tight text-foreground">EpicBox</p>
+              <p className="text-xs text-muted-foreground">Your personal file workspace</p>
             </div>
           </div>
 
-          <Card className="border-border shadow-lg">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-              <CardDescription>
-                Sign in to your account to continue
+          <Card className="border-border/70 bg-card/95 shadow-xl shadow-slate-900/5 backdrop-blur-sm">
+            <CardHeader className="space-y-2 px-6 pb-5 pt-7 sm:px-8 sm:pt-8">
+              <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Lock className="h-5 w-5" />
+              </div>
+              <CardTitle className="text-2xl font-semibold tracking-tight">Welcome back</CardTitle>
+              <CardDescription className="text-sm">
+                Sign in to continue to your EpicBox workspace.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-6 pb-7 sm:px-8 sm:pb-8">
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Email Field */}
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium">
                     Email
@@ -203,7 +192,6 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Password Field */}
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-sm font-medium">
                     Password
@@ -225,6 +213,7 @@ export default function LoginPage() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       disabled={loading}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -235,8 +224,7 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Remember Me & Forgot Password */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3 py-1">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="remember"
@@ -262,7 +250,6 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-                {/* Submit Button */}
                 <Button
                   type="submit"
                   className="w-full h-11 text-base font-medium"
@@ -282,7 +269,6 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              {/* Divider */}
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border" />
@@ -294,7 +280,6 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Sign Up Link */}
               <div className="text-center">
                 <Link to="/register">
                   <Button variant="outline" className="w-full h-11" disabled={loading}>
@@ -303,19 +288,15 @@ export default function LoginPage() {
                 </Link>
               </div>
 
-              {/* Additional Info */}
-              <p className="text-xs text-center text-muted-foreground mt-6">
-                By signing in, you agree to our Terms of Service and Privacy Policy
-              </p>
             </CardContent>
           </Card>
 
-          {/* Footer */}
-          <div className="mt-8 text-center text-sm text-muted-foreground">
-            <p>© 2025 EpicBox</p>
+          <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Shield className="h-3.5 w-3.5" />
+            <span>Your account is protected by Supabase authentication.</span>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

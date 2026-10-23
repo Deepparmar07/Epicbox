@@ -61,6 +61,7 @@ and protected storage operations.
    - `supabase/migrations/00006_handle_duplicate_signup_usernames.sql`
    - `supabase/migrations/00007_grant_authenticated_app_table_access.sql`
    - `supabase/migrations/00008_allow_encrypted_file_uploads.sql`
+   - `supabase/migrations/00009_track_file_storage_provider.sql`
 
    These migrations create the database tables, Row Level Security policies,
    profile trigger, functions, indexes, and private storage bucket. The trigger
@@ -68,7 +69,9 @@ and protected storage operations.
    usernames; migration `00005` restores profiles for accounts created before
    profile creation was repaired, `00007` grants table privileges required in
    addition to row-level security policies, and `00008` permits encrypted file
-   blobs in the private storage bucket.
+   blobs in the private storage bucket. `00009` records which provider stores
+   each file so existing Supabase files remain accessible after new uploads
+   switch to S3.
 
 4. Start the development server:
 
@@ -86,7 +89,7 @@ and protected storage operations.
 | `VITE_SUPABASE_URL` | Yes | URL of the active Supabase project |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes | Supabase publishable key |
 | `VITE_SUPABASE_ANON_KEY` | Legacy | Older anon-key name still supported |
-| `VITE_STORAGE_PROVIDER` | Yes | Use `supabase` for the supported setup |
+| `VITE_STORAGE_PROVIDER` | Yes | `supabase` or `s3`; S3 requires the setup below |
 | `VITE_ENCRYPTION_KEY` | For compatibility | AES key used for encrypted files |
 
 `VITE_*` values are embedded in the frontend bundle. The encryption key is
@@ -98,7 +101,7 @@ changing encryption behavior.
 
 ## Supabase setup
 
-The active project must contain all eight migrations listed above. New users are
+The active project must contain all nine migrations listed above. New users are
 created in the active Supabase project and their profile is created by a
 database trigger; the browser must not insert profile rows during signup.
 Users and file metadata are not automatically transferred when changing
@@ -106,14 +109,62 @@ Supabase projects.
 
 For a new project:
 
-1. Run all eight migrations in Supabase SQL Editor, in order.
+1. Run all nine migrations in Supabase SQL Editor, in order.
 2. Confirm the migrations complete successfully. The Supabase storage bucket
-   is only used when `VITE_STORAGE_PROVIDER=supabase`.
+   is used for legacy files and when `VITE_STORAGE_PROVIDER=supabase`.
 3. Configure Authentication settings and redirect URLs for local and Vercel
    origins.
 4. Try signing in with the email used at registration. If the auth account
    exists but its profile was missing, migration `00005` restores that profile.
    Accounts are not transferred when switching Supabase projects.
+
+## AWS S3 storage
+
+EpicBox encrypts files in the browser and uses a Supabase Edge Function to issue
+short-lived S3 presigned URLs. AWS credentials must only be stored as Edge
+Function secrets; never add them to Vercel `VITE_*` variables or commit them.
+Existing files stay in Supabase and keep working because each file records its
+storage provider. New uploads use the provider selected by
+`VITE_STORAGE_PROVIDER`.
+
+1. Create a private S3 bucket in the AWS region you will configure. Keep Block
+   Public Access enabled and enable bucket versioning if you want recovery from
+   accidental overwrites/deletes.
+2. Configure bucket CORS. For production, replace the origin below with the
+   EpicBox origin and add localhost only if needed for development:
+
+   ```json
+   [
+     {
+       "AllowedHeaders": ["*"],
+       "AllowedMethods": ["PUT", "GET", "DELETE"],
+       "AllowedOrigins": ["https://epicbox.vercel.app"],
+       "ExposeHeaders": ["ETag"],
+       "MaxAgeSeconds": 3000
+     }
+   ]
+   ```
+
+3. Create a dedicated AWS IAM user/access key limited to this bucket and the
+   `s3:PutObject`, `s3:GetObject`, and `s3:DeleteObject` actions. Do not use
+   root-account credentials. Scope the policy resource to
+   `arn:aws:s3:::YOUR_BUCKET_NAME/*`.
+4. Deploy `supabase/functions/s3-storage` to the same Supabase project used by
+   EpicBox. In Supabase Dashboard → Edge Functions → Secrets, set
+   `S3_BUCKET`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, and
+   `AWS_SECRET_ACCESS_KEY`. Never paste these values into chat or source files.
+   Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and
+   `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions.
+5. Run all nine migrations, including `00009_track_file_storage_provider.sql`.
+6. Only after the function and secrets are ready, set `VITE_STORAGE_PROVIDER=s3` in Vercel Production, then redeploy. Set it
+   for Preview/Development only where the Edge Function and secrets are ready.
+7. Test a new upload, download, preview, share link, and permanent delete before
+   removing or changing the existing Supabase Storage bucket.
+
+S3 is the primary object store after this switch, not automatically a backup.
+For backup protection, enable versioning and configure replication or scheduled
+copies to a separate bucket/account with independent access controls and
+retention. Periodically test restoring an object.
 
 ## Vercel deployment
 

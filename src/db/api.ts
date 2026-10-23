@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { createStorageManager } from '@/lib/storageProviders';
+import { createStorageManager, type StorageProviderId } from '@/lib/storageProviders';
 import type { Profile, Folder, File, SharedLink } from '@/types';
 
 // Initialize storage manager with configured provider (Supabase or S3)
@@ -425,19 +425,31 @@ export const storageApi = {
     return await storageManager.uploadFile(file, userId);
   },
 
-  async downloadFile(path: string, fileType: string): Promise<Blob> {
-    return await storageManager.downloadFile(path, fileType);
+  async downloadFile(path: string, fileType: string, provider: StorageProviderId = 'supabase'): Promise<Blob> {
+    return await storageManager.downloadFile(path, fileType, provider);
   },
 
-  async deleteFile(path: string): Promise<void> {
-    await storageManager.deleteFile(path);
+  async downloadSharedFile(path: string, fileType: string, token: string, password?: string): Promise<Blob> {
+    return await storageManager.downloadSharedFile(path, fileType, token, password);
   },
 
-  getPublicUrl(path: string): string {
-    return storageManager.getPublicUrl(path) || '';
+  async deleteFile(path: string, provider: StorageProviderId = 'supabase'): Promise<void> {
+    await storageManager.deleteFile(path, provider);
+  },
+
+  getPublicUrl(path: string, provider: StorageProviderId = 'supabase'): string | null {
+    return storageManager.getPublicUrl(path, provider);
+  },
+
+  async getSharedFileInfo(token: string) {
+    return storageManager.getSharedFileInfo(token);
   },
 
   getStorageProvider(): string {
     return storageManager.getProviderName();
+  },
+
+  getStorageProviderId(): StorageProviderId {
+    return storageManager.getProviderId();
   },
 };

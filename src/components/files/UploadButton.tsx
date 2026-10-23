@@ -33,7 +33,16 @@ export default function UploadButton({ currentFolderId, onUploadComplete }: Uplo
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0 || !profile) return;
+    if (!files || files.length === 0) return;
+    if (!profile) {
+      toast({
+        title: 'Profile unavailable',
+        description: 'Your profile has not loaded. Refresh and try again before uploading.',
+        variant: 'destructive',
+      });
+      e.target.value = '';
+      return;
+    }
 
     setUploading(true);
     let successCount = 0;
@@ -71,6 +80,7 @@ export default function UploadButton({ currentFolderId, onUploadComplete }: Uplo
           size: file.size,
           type: file.type,
           storage_path: storagePath,
+          storage_provider: storageApi.getStorageProviderId(),
           folder_id: currentFolderId,
           owner_id: profile.id,
         });
@@ -80,7 +90,7 @@ export default function UploadButton({ currentFolderId, onUploadComplete }: Uplo
         console.error('Upload error:', error);
         if (storagePath) {
           try {
-            await storageApi.deleteFile(storagePath);
+            await storageApi.deleteFile(storagePath, storageApi.getStorageProviderId());
           } catch (cleanupError) {
             console.error('Failed to clean up uploaded file after metadata save failed:', cleanupError);
           }

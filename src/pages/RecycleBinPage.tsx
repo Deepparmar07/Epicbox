@@ -64,7 +64,7 @@ export default function RecycleBinPage() {
     if (!deleteFile) return;
 
     try {
-      await storageApi.deleteFile(deleteFile.storage_path);
+      await storageApi.deleteFile(deleteFile.storage_path, deleteFile.storage_provider);
       await fileApi.permanentDeleteFile(deleteFile.id);
       toast({
         title: 'Success',

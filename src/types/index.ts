@@ -31,6 +31,7 @@ export interface File {
   size: number;
   type: string;
   storage_path: string;
+  storage_provider: 'supabase' | 's3';
   folder_id: string | null;
   owner_id: string;
   is_deleted: boolean;

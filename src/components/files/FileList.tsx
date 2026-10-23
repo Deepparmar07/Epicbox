@@ -37,7 +37,7 @@ export default function FileList({
 
   const handleDownload = async (file: File) => {
     try {
-      const blob = await storageApi.downloadFile(file.storage_path, file.type);
+      const blob = await storageApi.downloadFile(file.storage_path, file.type, file.storage_provider);
       downloadBlob(blob, file.name);
       toast({
         title: 'Success',

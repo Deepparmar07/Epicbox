@@ -46,7 +46,7 @@ export default function FavoritesPage() {
 
   const handleDownload = async (file: File) => {
     try {
-      const blob = await storageApi.downloadFile(file.storage_path, file.type);
+      const blob = await storageApi.downloadFile(file.storage_path, file.type, file.storage_provider);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

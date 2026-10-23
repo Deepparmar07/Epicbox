@@ -14,7 +14,7 @@ output
 *.local
 .env
 !.env.example
-package-lock.json
+supabase/.temp/
 
 # Editor directories and files
 .vscode/*

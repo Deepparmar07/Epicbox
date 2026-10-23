@@ -182,7 +182,9 @@ export const fileApi = {
     return data;
   },
 
-  async createFile(file: Omit<File, 'id' | 'created_at' | 'updated_at' | 'is_deleted' | 'deleted_at'>): Promise<File | null> {
+  async createFile(
+    file: Omit<File, 'id' | 'created_at' | 'updated_at' | 'is_deleted' | 'deleted_at' | 'is_favorite'>
+  ): Promise<File | null> {
     const { data, error } = await supabase
       .from('files')
       .insert(file)

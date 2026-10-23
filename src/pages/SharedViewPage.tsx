@@ -58,6 +58,7 @@ export default function SharedViewPage() {
           };
           fileData = {
             ...access.file,
+            is_favorite: false,
             folder_id: null,
             owner_id: '',
             deleted_at: null,
@@ -84,6 +85,7 @@ export default function SharedViewPage() {
           };
           fileData = {
             ...access.file,
+            is_favorite: false,
             folder_id: null,
             owner_id: '',
             deleted_at: null,

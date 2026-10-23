@@ -38,9 +38,10 @@
 
 ## Overview
 
-EpicBox is a web-based cloud file manager built with React and Supabase, with
-support for private Supabase Storage or AWS S3 object storage. The app is
-deployed on [Vercel](https://epicbox.vercel.app/); source code is hosted in
+EpicBox is a web-based cloud file manager built with React, Supabase, and
+Amazon S3. Private S3 is the primary object-storage target; Supabase Storage
+support remains for files stored there previously. The app is deployed on
+[Vercel](https://epicbox.vercel.app/); source code is hosted in
 [Deepparmar07/Epicbox](https://github.com/Deepparmar07/Epicbox).
 
 ## Features
@@ -51,8 +52,8 @@ deployed on [Vercel](https://epicbox.vercel.app/); source code is hosted in
 | Create folders and browse file categories | Choose whether recipients can download | Apply user/admin roles and database access policies |
 | Keep favorites and revisit recent files | Share a QR code and view access statistics | Use a recycle bin, settings, and theme controls |
 
-Files are encrypted in the browser with AES-GCM before upload. Object storage
-can be Supabase Storage or a private AWS S3 bucket.
+Files are encrypted in the browser with AES-GCM before upload and stored in a
+private AWS S3 bucket. Existing Supabase Storage files remain supported.
 
 ## Technology
 
@@ -70,8 +71,8 @@ flowchart LR
     Auth["Supabase Auth"]
     DB["Supabase PostgreSQL<br/>profiles, metadata, shares"]
     Edge["Supabase Edge Function<br/>auth checks + signed URLs"]
-    S3["Private AWS S3 bucket<br/>encrypted file objects"]
-    SupaStorage["Supabase Storage<br/>legacy or selected provider"]
+    S3["Primary: private AWS S3<br/>encrypted file objects"]
+    SupaStorage["Supabase Storage<br/>existing file support"]
 
     Browser -->|"sign in / query"| Auth
     Browser -->|"read and write metadata"| DB
@@ -81,8 +82,8 @@ flowchart LR
     Browser -->|"provider-selected transfer"| SupaStorage
 ```
 
-The S3 path is optional. Existing file records include their storage provider
-so the application can route files to the provider where they were uploaded.
+Each file record tracks its storage provider so the application routes files
+to the provider where they were uploaded.
 
 ## How storage works
 
@@ -122,11 +123,14 @@ key is hidden from users or that it provides private per-user key management.
    ```dotenv
    VITE_SUPABASE_URL=https://your-project-ref.supabase.co
    VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
-   VITE_STORAGE_PROVIDER=supabase
+   VITE_STORAGE_PROVIDER=s3
    VITE_ENCRYPTION_KEY=your-encryption-key
    ```
 
-3. Apply the SQL migrations in `supabase/migrations/` to the intended Supabase
+3. Configure the S3 bucket, IAM policy, Edge Function, and secrets as described
+   below before using `VITE_STORAGE_PROVIDER=s3`. If S3 is not configured in a
+   local environment yet, use `VITE_STORAGE_PROVIDER=supabase` there.
+4. Apply the SQL migrations in `supabase/migrations/` to the intended Supabase
    project, in filename order. The current migration sequence is:
 
    | Migration | Purpose |
@@ -142,7 +146,7 @@ key is hidden from users or that it provides private per-user key management.
    | `00009_track_file_storage_provider.sql` | Track whether each file is in Supabase or S3 |
 
    Run each migration once, in order, against the correct Supabase project.
-4. Start the local development server:
+5. Start the local development server:
 
    ```sh
    npm run dev
@@ -157,18 +161,18 @@ objects are not automatically transferred.
 
 ## Storage configuration
 
-### Supabase Storage
+### Supabase Storage compatibility
 
-Set `VITE_STORAGE_PROVIDER=supabase` to store new uploads in the configured
-Supabase Storage bucket. This is the default. Existing file records retain
-their provider so they continue using their original storage location.
+Existing files in Supabase Storage remain accessible. Set
+`VITE_STORAGE_PROVIDER=supabase` only for environments that should send new
+uploads to Supabase Storage instead of S3.
 
 ### AWS S3
 
-S3 is optional. The bucket must remain private; EpicBox accesses it through
-short-lived URLs issued by the `s3-storage` Supabase Edge Function. AWS
-credentials belong only in Supabase Edge Function secrets—not in frontend
-`VITE_*` variables, source code, or chat.
+AWS S3 is EpicBox's primary object-storage target. The bucket must remain
+private; EpicBox accesses it through short-lived URLs issued by the
+`s3-storage` Supabase Edge Function. AWS credentials belong only in Supabase
+Edge Function secrets—not in frontend `VITE_*` variables, source code, or chat.
 
 1. Create a private S3 bucket. Keep **Block all public access** enabled.
 2. Configure bucket CORS for the application origins. For production, use:
@@ -225,7 +229,8 @@ credentials belong only in Supabase Edge Function secrets—not in frontend
 6. Apply migration `00009_track_file_storage_provider.sql` if it has not
    already been applied.
 7. After verifying the function, secrets, bucket CORS, and IAM policy, set
-   `VITE_STORAGE_PROVIDER=s3` in Vercel and redeploy the frontend.
+   `VITE_STORAGE_PROVIDER=s3` in Vercel and redeploy the frontend. Keep this
+   setting enabled in the production environment to use S3 for new uploads.
 8. Test a new upload, download, preview, share link, and deletion. Existing
    Supabase objects are not automatically copied to S3.
 
@@ -245,7 +250,7 @@ bucket or account, and periodically test restoring an object.
 | `VITE_SUPABASE_URL` | Yes | URL of the Supabase project |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes | Supabase publishable key |
 | `VITE_SUPABASE_ANON_KEY` | Legacy | Legacy publishable/anon key name supported by existing deployments |
-| `VITE_STORAGE_PROVIDER` | No | `supabase` (default) or `s3` |
+| `VITE_STORAGE_PROVIDER` | Yes for S3 | `s3` for primary object storage; `supabase` for Supabase Storage environments |
 | `VITE_ENCRYPTION_KEY` | For existing encrypted data | Browser-side AES-GCM encryption key |
 
 Vite embeds `VITE_*` values in the client bundle. In particular,
